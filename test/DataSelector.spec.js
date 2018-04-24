@@ -1,26 +1,27 @@
-import { DataSelector } from "../../src/selectors/DataSelector";
-import { Tokenizer } from "../../src/selectors/tokenizer/Tokenizer";
-import { Parser } from "../../src/selectors/parser/Parser";
+import { DataSelector } from "../src/DataSelector";
+import { Tokenizer } from "../src/tokenizer/Tokenizer";
+import { Parser } from "../src/parser/Parser";
 
 describe('DataSelector', () => {
-    describe('#select', () => {
-        it('returns data when no selector is present', () => {
-            const data = {};
-            const selector = new DataSelector(new Parser(new Tokenizer()));
-
-            expect(selector.select(data)).toBe(data);
-        });
-
+    describe('#parse', () => {
         it('throws a SyntaxError when selector syntax has no matches', () => {
             const selector = new DataSelector(new Parser(new Tokenizer()));
-
-            expect(() => selector.select({}, '???')).toThrow('Unexpected token "?" at position "0"');
+            expect(() => selector.parse('???')).toThrow('Unexpected token "?" at position "0"');
         });
 
         it('throws a SyntaxError when selector syntax is invalid', () => {
             const selector = new DataSelector(new Parser(new Tokenizer()));
 
-            expect(() => selector.select({}, '?prop')).toThrow('Unexpected token "?" at position "0"');
+            expect(() => selector.parse('?prop')).toThrow('Unexpected token "?" at position "0"');
+        });
+    });
+
+    describe('#select', () => {
+        it('returns data when no node is present', () => {
+            const data = {};
+            const selector = new DataSelector(new Parser(new Tokenizer()));
+
+            expect(selector.select(data)).toBe(data);
         });
 
         describe('property accessors', () => {
@@ -29,8 +30,10 @@ describe('DataSelector', () => {
                 const value = data.prop;
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('.prop');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, '.prop')).toBe(value);
+                expect(result).toBe(value);
             });
 
             it('accepts a nested property accessor', () => {
@@ -38,8 +41,10 @@ describe('DataSelector', () => {
                 const value = data.prop1.prop2.prop3;
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('.prop1.prop2.prop3');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, '.prop1.prop2.prop3')).toBe(value);
+                expect(result).toBe(value);
             });
 
             it('accepts a flatMap modifier', () => {
@@ -47,15 +52,18 @@ describe('DataSelector', () => {
                 const value = [1, 2, 3];
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('.value[]');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, '.value[]')).toEqual(value);
+                expect(result).toEqual(value);
             });
 
             it('throws a SyntaxError when data selected with flatMap is not an array', () => {
                 const data = { prop: 1 };
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('.prop[]');
 
-                expect(() => selector.select(data, '.prop[]')).toThrow('Data is not an array for flat map property (.prop[])');
+                expect(() => selector.select(data, node)).toThrow('Data is not an array for flat map property (.prop[])');
             });
         });
 
@@ -65,8 +73,10 @@ describe('DataSelector', () => {
                 const value = data.prop();
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('#prop');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, '#prop')).toBe(value);
+                expect(result).toBe(value);
             });
 
             it('accepts a nested method accessor', () => {
@@ -74,22 +84,26 @@ describe('DataSelector', () => {
                 const value = data.prop1().prop2().prop3();
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('#prop1#prop2#prop3');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, '#prop1#prop2#prop3')).toBe(value);
+                expect(result).toBe(value);
             });
 
             it('throws a SyntaxError when no property for selector exists', () => {
                 const data = { prop2: 1 };
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('#prop');
 
-                expect(() => selector.select(data, '#prop')).toThrow('No method "prop" in data (#prop)');
+                expect(() => selector.select(data, node)).toThrow('No method "prop" in data (#prop)');
             });
 
             it('throws a SyntaxError when property for selector is not a function', () => {
                 const data = { prop: 1 };
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('#prop');
 
-                expect(() => selector.select(data, '#prop')).toThrow('Property "prop" is not a function (#prop)');
+                expect(() => selector.select(data, node)).toThrow('Property "prop" is not a function (#prop)');
             });
 
             it('accepts a flatMap modifier', () => {
@@ -97,15 +111,18 @@ describe('DataSelector', () => {
                 const value = [1, 2, 3];
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('#value[]');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, '#value[]')).toEqual(value);
+                expect(result).toEqual(value);
             });
 
             it('throws a SyntaxError when data selected with flatMap is not an array', () => {
                 const data = { prop: () => 1 };
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('#prop[]');
 
-                expect(() => selector.select(data, '#prop[]')).toThrow('Data is not an array for flat map property (#prop[])');
+                expect(() => selector.select(data, node)).toThrow('Data is not an array for flat map property (#prop[])');
             });
         });
 
@@ -115,8 +132,10 @@ describe('DataSelector', () => {
                 const value = data.prop1.prop2.prop3();
 
                 const selector = new DataSelector(new Parser(new Tokenizer()));
+                const node = selector.parse('prop1.prop2#prop3');
+                const result = selector.select(data, node);
 
-                expect(selector.select(data, 'prop1.prop2#prop3')).toBe(value);
+                expect(result).toBe(value);
             });
         });
     });

@@ -9,6 +9,8 @@ export class DataSelector {
     }
 
     select(data, node) {
+        if (!node) return data;
+
         return node.entries.reduce((data, entry) => {
             if (entry.type === 'property') return this.selectProperty(data, entry, node.selector);
             if (entry.type === 'method') return this.selectMethod(data, entry, node.selector);
